@@ -8,7 +8,21 @@ const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-  plugins: [react(), tailwindcss(),],
+  plugins: [react(), tailwindcss(), {
+    // Experimental issue #64 adapter: Arborist does not expose its default
+    // container's list through a public API, so replace this internal import.
+    name: "delta-stable-arborist-rows",
+    enforce: "pre" as const,
+    transform(code: string, id: string) {
+      if (id.endsWith("react-arborist/dist/module/components/default-container.js")) {
+        const originalImport = 'from "react-window"';
+        if (!code.includes(originalImport)) {
+          throw new Error("Arborist's internal list import changed; update the issue #64 adapter");
+        }
+        return code.replace(originalImport, 'from "@/components/stable-fixed-size-list"');
+      }
+    },
+  }],
 
 
   resolve: {

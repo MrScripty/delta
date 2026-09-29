@@ -1,4 +1,5 @@
 import { Tree } from "react-arborist";
+import { useEffect, useRef } from "react";
 import { useDirEntryHistoryStore, userStore, useSortStore } from "./store";
 import type { SortColumn } from "./store";
 import useResizeObserver from "use-resize-observer";
@@ -60,6 +61,17 @@ const SimpleNode = ({ node, style, dragHandle }: any) => {
 
   // padding that react arborist injects is stripped but the rest of the stuff is not, padding self handle
   const { paddingLeft, ...restStyle } = style;
+  const hovered = useRef(false);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      if (hovered.current) {
+        userStore.getState().changeCurrentPath(node.data.path);
+        userStore.getState().changeCurrentEntryDetails(node.data.numsubdir, node.data.numsubfiles);
+      }
+    }, 120);
+    return () => window.clearTimeout(timeout);
+  }, [node.data.path, node.data.numsubdir, node.data.numsubfiles]);
 
   // Handle current entry size
   let current_size = node.data.diff?.deleted_flag ? ("0 B") : (formatBytes(node.data.size));
@@ -142,10 +154,12 @@ const SimpleNode = ({ node, style, dragHandle }: any) => {
       }}
       onMouseEnter={
         () => {
+          hovered.current = true;
           userStore.getState().changeCurrentPath(node.data.path)
           userStore.getState().changeCurrentEntryDetails(node.data.numsubdir, node.data.numsubfiles)
         }
       }
+      onMouseLeave={() => { hovered.current = false; }}
     >
 
       <div
@@ -240,4 +254,3 @@ function TestFileTreeSecond() {
 }
 
 export default TestFileTreeSecond;
-
